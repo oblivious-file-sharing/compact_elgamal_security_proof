@@ -1,0 +1,340 @@
+\documentclass{article}
+\usepackage[n,operators,landau,sets,logic]{cryptocode}
+\usepackage{todonotes}
+\usepackage{libertine}
+\usepackage[tracking,spacing,kerning]{microtype}
+\usepackage{amsthm}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+
+\newtheorem{lemma}{Lemma}
+\newcommand{\lemmaautorefname}{Lemma}
+
+\title{\bf Security Proofs of the Compact ElGamal Encryption Scheme}
+\author{\href{https://www.github.com/oblivious-file-sharing/}{oblivious-file-sharing}}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Syntax}
+We provide a simple syntax of the compact ElGamal scheme that suffices our security proofs. Consider an ElGamal encryption scheme that are specialized to encrypt a plaintext vector that comprises $n$ Ristretto points, as follows.
+
+\begin{itemize}
+    \item $\left(\mathsf{sk}, \mathsf{pk}\right)\leftarrow \mathsf{KeyGen}\left(1^\lambda\right)$ generates the public key and the private key.
+    
+    \item $\mathsf{ct}\leftarrow\mathsf{Encrypt}\left(\mathsf{pk},\mathsf{pt}\right)$ encrypts a plaintext vector, which comprises $n$ Ristretto points.
+    
+    \item $\mathsf{pt}\leftarrow\mathsf{Decrypt}\left(\mathsf{sk},\mathsf{ct}\right)$ decrypts a ciphertext vector, which comprises $(n+1)$ Ristretto points.
+    
+    \item $\mathsf{ct}'\leftarrow\mathsf{Rerand}\left(\mathsf{pk},\mathsf{ct}\right)$ rerandomizes a ciphertext vector.
+\end{itemize}
+
+\section{Security Definition for Semantic Security}
+We consider semantic security: a probabilistic polynomial-time (PPT) adversary $\mathcal{A}$, which consists of two algorithms $\mathcal{A}_1$ and $\mathcal{A}_2$, tries to distinguish the ciphertexts in the chosen-plaintext setting. 
+
+For a pair of randomly generated keys $(\mathsf{sk},\mathsf{pk})\leftarrow\mathsf{KeyGen}(1^\lambda)$, we let the first algorithm $\mathcal{A}_1(\mathsf{pk})$ choose two plaintexts $(\mathsf{ptA}, \mathsf{ptB})$ and some state information $\mathsf{st}$; then, the second algorithm $\mathcal{A}_2$ cannot distinguish the following two distributions with a non-negligible advantage.
+\[
+\begin{array}{c}
+(\mathsf{st}, \mathsf{Encrypt}\left(\mathsf{pk}, \mathsf{ptA}\right))\\
+(\mathsf{st}, \mathsf{Encrypt}\left(\mathsf{pk}, \mathsf{ptB}\right))
+\end{array}
+\]
+
+Thus, we write
+\[
+(\mathsf{st}, \mathsf{Encrypt}\left(\mathsf{pk}, \mathsf{ptA}\right))\stackrel{\mathsf{c}}{\approx}(\mathsf{st}, \mathsf{Encrypt}\left(\mathsf{pk}, \mathsf{ptB}\right))~.
+\]
+where $\stackrel{\mathsf{c}}{\approx}$ refers to computational indistinguishability. In this definition, we require that each of the two plaintexts provided by $\mathcal{A}_1$, which is $\mathsf{ptA}$ or $\mathsf{ptB}$, is correctly encoded. This check can be conducted in polynomial time.
+
+\section{Security Definition of Rerandomization}
+Rerandomization is another property of the compact ElGamal encryption. For simplicity, we consider a notion of perfect security, as follows. 
+
+We consider a PPT adversary $\mathcal{A}$, which consists of two algorithms $A_1$ and $A_2$. We simply let $A_1$ output a key pair $(\mathsf{sk},\mathsf{pk})$, one plaintext $\mathsf{pt}$, one ciphertext $\mathsf{ct}$, and some state information $\mathsf{st}$. As long as the key pair and the ciphertext are legitimate, which means that there exists some random tape using which $\mathsf{KeyGen}(1^\lambda)$ outputs that key pair, and there exists some random tape using which $\mathsf{Encrypt}(\mathsf{pk}, \mathsf{pt})$ outputs that ciphertext, we want
+\[
+\left(\mathsf{st}, \mathsf{Rerand}(\mathsf{pk}, \mathsf{ct})\right)\stackrel{\mathsf{p}}{\approx}\left(\mathsf{st}, \mathsf{Encrypt}(\mathsf{pk}, \mathsf{pt})\right)~,
+\]
+where $\stackrel{\mathsf{p}}{\approx}$ refers to perfect indistinguishability.
+
+\section{Construction}
+The underlying curve for Ristretto, Curve25519, is a curve of the order $8q$. The Ristretto group is a subgroup with order $q$, in which $q\geq 2^\ell$. We let $G$ be a base point of the Ristretto subgroup.  The compact ElGamal encryption scheme has the following construction:
+
+\begin{itemize}
+    \item $\left(\mathsf{sk}, \mathsf{pk}\right)\leftarrow \mathsf{KeyGen}\left(1^\lambda\right)$.
+    \begin{itemize}
+        \item Samples $\mathsf{sk}_i\sample\{0, 1, ..., q-1\}$ for $i\in\{1,2,...,n\}$. 
+        \item Computes $\mathsf{pk}_i\leftarrow \mathsf{sk}_i\cdot G$ for $i\in\{1,2,...,n\}$.
+        \item Lets $\mathsf{sk}=(\mathsf{sk}_1,\mathsf{sk}_2,...,\mathsf{sk}_{n})$.
+        \item Lets $\mathsf{pk}=(\mathsf{pk}_1,\mathsf{pk}_2,...,\mathsf{pk}_{n})$.
+        \item Outputs $(\mathsf{sk}, \mathsf{pk})$.
+    \end{itemize}
+    
+    \item $\mathsf{ct}\leftarrow\mathsf{Encrypt}(\mathsf{pk},\mathsf{pt})$. 
+    \begin{itemize}
+        \item Parses $\mathsf{pt}$ as an array of $n$ Ristretto points: $\mathsf{pt}=(\mathsf{pt}_1, \mathsf{pt}_2, ..., \mathsf{pt}_n)$. 
+        
+        \item Parses $\mathsf{pk}$ as an array of $n$ Ristretto epoints: $\mathsf{pk}=(\mathsf{pk}_1, \mathsf{pk}_2, ..., \mathsf{pk}_n)$.
+        
+        \item Samples $r\sample\{0, 1, ..., q-1\}$.
+        
+        \item Computes $\mathsf{ct}_i\leftarrow \mathsf{pt}_i + r \cdot \mathsf{pk}_i$ for $i\in\{1,2,...,n\}$.
+        
+        \item Computes $\mathsf{ct}_{n+1}\leftarrow r\cdot G$. 
+        
+        \item Lets $\mathsf{ct}=(\mathsf{ct}_1, \mathsf{ct}_2, ..., \mathsf{ct}_{n+1})$.
+        
+        \item Outputs $\mathsf{ct}$.
+    \end{itemize}
+    
+    \item $\mathsf{pt}\leftarrow\mathsf{Decrypt}\left(\mathsf{sk},\mathsf{ct}\right)$.
+    \begin{itemize}
+        \item Parses $\mathsf{sk}$ as an array of $n$ scalar values: $\mathsf{sk}=(\mathsf{sk}_1, \mathsf{sk}_2, ..., \mathsf{sk}_n)$.
+        
+        \item Parses $\mathsf{ct}$ as an array of $(n+1)$ points: $\mathsf{ct}=(\mathsf{ct}_1, \mathsf{ct}_2, ..., \mathsf{ct}_{n+1})$.
+        
+        \item Computes $\mathsf{pt}_i\leftarrow\mathsf{ct}_i-\mathsf{sk}_{i}\cdot\mathsf{ct}_{n+1}$  for $i\in\{1,2,...,n\}$.
+        
+        \item Lets $\mathsf{pt}=(\mathsf{pt}_1, \mathsf{pt}_2, ..., \mathsf{pt}_{n})$.
+        
+        \item Outputs $\mathsf{pt}$. 
+    \end{itemize}
+    
+    \item $\mathsf{ct}'\leftarrow\mathsf{Rerand}\left(\mathsf{pk},\mathsf{ct}\right)$. 
+    \begin{itemize}
+        \item Parses $\mathsf{pk}$ as an array of $n$ points: $\mathsf{pk}=(\mathsf{pk}_1, \mathsf{pk}_2, ..., \mathsf{pk}_n)$.
+    
+        \item Parses $\mathsf{ct}$ as an array of $(n+1)$ points: $\mathsf{ct}=(\mathsf{ct}_1, \mathsf{ct}_2, ..., \mathsf{ct}_{n+1})$.
+        
+        \item Samples $r'\sample\{0,1,...,q-1\}$.
+        
+        \item Computes $\mathsf{ct}'_i\leftarrow\mathsf{ct}_i+ r'\cdot \mathsf{pk}_i$ for $i\in\{1,2,...,n\}$. 
+        
+        \item Computes $\mathsf{ct}'_{n+1}\leftarrow\mathsf{ct}_{n+1}+r'\cdot G$. 
+        
+        \item Lets $\mathsf{ct}'=(\mathsf{ct}'_1, \mathsf{ct}'_2, ..., \mathsf{ct}'_{n+1})$.
+        
+        \item Outputs $\mathsf{ct}'$.
+    \end{itemize}
+\end{itemize}
+
+\section{Security Proof for Semantic Security}
+We first recall the decisional Diffie-Hellman assumption in the Ristretto group with a base point $G$, as follows. For random $k, x, r\sample\{0,1,...,q-1\}$, we have:
+\[
+\left(\begin{array}{r}
+k\cdot G,\\
+x\cdot G,\\
+k\cdot x\cdot G
+\end{array}\right)\stackrel{\mathsf{c}}{\approx}\left(\begin{array}{l}
+k\cdot G,\\
+x\cdot G,\\
+r\cdot G
+\end{array}\right).
+\]
+
+Extending from this assumption, we want to claim the following result: 
+
+\begin{lemma}
+In the Ristretto group (of prime-order $q$), for random $k, x_1, x_2, ..., x_n, r_1, r_2, ...,\allowbreak r_n\sample\allowbreak\{0,\allowbreak1,\allowbreak...,\allowbreak q-1\}$, we have:
+\[
+\left(\begin{array}{r}
+k\cdot G,\\
+x_1\cdot G,\\
+x_2\cdot G,\\
+...,\\
+x_n\cdot G,\\
+k\cdot x_1\cdot G,\\
+k\cdot x_2\cdot G,\\
+...,\\
+k\cdot x_n\cdot G
+\end{array}\right)\stackrel{\mathsf{c}}{\approx}\left(\begin{array}{l}
+k\cdot G,\\
+x_1\cdot G,\\
+x_2\cdot G,\\
+...,\\
+x_n\cdot G,\\
+r_1\cdot G,\\
+r_2\cdot G,\\
+...,\\
+r_n\cdot G
+\end{array}\right).
+\]
+\label{lemma:nddh}\end{lemma}
+
+\begin{proof}
+We prove the lemma by hybrid argument. Consider the following hybrid distribution $H_i$.
+\[
+H_i: \left(\begin{array}{l}
+k\cdot G,\\
+x_1\cdot G,\\
+x_2\cdot G,\\
+...,\\
+x_n\cdot G,\\
+r_1\cdot G,\\
+r_2\cdot G,\\
+...,\\
+r_i\cdot G,\\
+k\cdot x_{i+1} \cdot G,\\
+...,\\
+k\cdot x_{n}\cdot G
+\end{array}\right)
+\]
+\end{proof}
+We know that the left-hand side of \autoref{lemma:nddh} equals $H_0$, and the right-hand side equals $H_n$. We want to prove that for any $i\in\{0,1,...,n-1\}$, we have:
+\[
+H_{i}\stackrel{\mathsf{c}}{\approx}H_{i+1}.
+\]
+
+If there is no contradiction, by hybrid argument, we know that $H_0$ and $H_n$ are indistinguishable, and \autoref{lemma:nddh} holds.
+
+If there is any contradiction, we suppose that there is a probabilistic polynomial-time (PPT) algorithm $\mathcal{D}_i$ that can distinguish $H_i$ and $H_{i+1}$ with a non-negligible advantage. However, this supposition implies that there is also a PPT algorithm $\mathcal{E}$ that violates the decisional Diffie-Hellman assumption. The construction of $\mathcal{E}$ is as follows:
+\begin{itemize}
+    \item The challenge for $\mathcal{E}$ to solve is either from the left-hand side distribution (denoted by $D_L$) or the right-hand side distribution (denoted by $D_R$), as follows:
+    \begin{align}
+        D_L:~&(k\cdot G, x\cdot G, k\cdot x\cdot G),\notag\\
+        D_R:~&(k\cdot G, x\cdot G, r\cdot G)\notag
+    \end{align}
+    Let us write the challenge as $Q=\left(Q_1,Q_2,Q_3\right)$, where $Q_1=k\cdot G$, $Q_2=x\cdot G$, and $Q_3$ equals $k\cdot x\cdot G$ or $r\cdot G$.
+
+    \item The algorithm $\mathcal{E}$'s idea is to map the challenge into either the distribution $H_i$ or the distribution $H_{i+1}$. The difference between these two distributions are highlighted as follows.
+    \begin{align}
+        H_i:~&(k\cdot G, ..., r_i\cdot G, \boxed{k\cdot x_{i+1}\cdot G},~k\cdot x_{i+2}\cdot G, ..., k\cdot x_n\cdot G),\notag\\
+        H_{i+1}:~&(k\cdot G, ..., r_i\cdot G, \boxed{r_{i+1}\cdot G},~k\cdot x_{i+2}\cdot G, ..., k\cdot x_n\cdot G).\notag
+    \end{align}
+    
+    \item To do that, the algorithm $\mathcal{E}$ samples $x_1, x_2, ..., x_i, x_{i+2}, x_{i+3}, ..., x_{n},r_1,r_2,...,\allowbreak r_i,\allowbreak r_{i+2},\allowbreak r_{i+3}, ..., r_{n}\sample\{0,1,...,q-1\}$ and generates the following new challenge $Q'$: 
+    \[
+    Q':~\left(\begin{array}{l}
+    Q_1,\\
+    x_1\cdot G,\\
+    x_2\cdot G,\\
+    ...,\\
+    x_i\cdot G,\\
+    Q_2,\\
+    x_{i+2}\cdot G,\\
+    x_{i+3}\cdot G,\\
+    ...,\\
+    x_n\cdot G,\\
+    r_i\cdot G,\\
+    Q_3,\\
+    x_{i+2}\cdot Q_1,\\
+    x_{i+3}\cdot Q_1,\\
+    ...,\\
+    x_{n}\cdot Q_1
+    \end{array}\right),
+    \]
+    which is either equivalent to sampling from $H_i$ or equivalent to sampling from $H_{i+1}$, as we can see by comparing the distributions. 
+    
+    \item The algorithm $\mathcal{E}$ outputs whatever $D_i$ outputs for the challenge $Q'$. Recall that the algorithm $D_i$ has a non-negligible advantage in distinguishing $H_i$ and $H_{i+1}$; it implies that the algorithm $\mathcal{E}$ also has that advantage. 
+\end{itemize}
+However, the decisional Diffie-Hellman assumption says that no such probabilistic polynomial-time algorithm $\mathcal{E}$ exists, a contradiction. Thus, there is no such attacker $D_i$, and the lemma holds. 
+
+Now, we claim the following lemma.
+
+\begin{lemma} In the compact ElGamal algorithm constructed over the Ristretto group, for a randomly sampled key pair $(\mathsf{sk},\mathsf{pk})\leftarrow\mathsf{KeyGen}(1^\lambda)$ and for arbitrary two plaintexts $(\mathsf{ptA},\mathsf{ptB})$ chosen by the previously mentioned PPT algorithm $\mathcal{A}_1$ together with the state $\mathsf{st}$, the following two distributions are indistinguishable.
+\[
+\left(\begin{array}{r}
+\mathsf{st},\\
+\mathsf{ptA}_1+k\cdot x_1\cdot G,\\
+\mathsf{ptA}_2+k\cdot x_2\cdot G,\\
+...,\\
+\mathsf{ptA}_n+k\cdot x_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)\stackrel{\mathsf{c}}{\approx}\left(\begin{array}{l}
+\mathsf{st},\\
+\mathsf{ptB}_1+k\cdot x_1\cdot G,\\
+\mathsf{ptB}_2+k\cdot x_2\cdot G,\\
+...,\\
+\mathsf{ptB}_n+k\cdot x_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)
+\]
+where $\mathsf{ptA}$ is parsed as $(\mathsf{ptA}_1, \mathsf{ptA}_2, ..., \mathsf{ptA}_n)$, and $\mathsf{ptB}$ is parsed as $(\mathsf{ptB}_1, \mathsf{ptB}_2, ..., \mathsf{ptB}_n)$.
+\end{lemma}
+
+\begin{proof}
+    Recall that $\mathsf{st}$ is computed by the algorithm $A_1$ with the public key as input, which comprises $(x_1\cdot G, x_2\cdot G, ..., x_n\cdot G)$ here. By applying \autoref{lemma:nddh}, we know:
+    \[
+    \left(\begin{array}{r}
+\mathsf{st},\\
+\mathsf{ptA}_1+k\cdot x_1\cdot G,\\
+\mathsf{ptA}_2+k\cdot x_2\cdot G,\\
+...,\\
+\mathsf{ptA}_n+k\cdot x_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)\stackrel{\mathsf{c}}{\approx}\left(\begin{array}{l}
+\mathsf{st},\\
+\mathsf{ptA}_1+r_1\cdot G,\\
+\mathsf{ptA}_2+r_2\cdot G,\\
+...,\\
+\mathsf{ptA}_n+r_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)\]
+where $r_1,r_2,...,r_n$ are individually sampled from $\{0,1,...,q-1\}$. 
+
+And,
+    \[
+    \left(\begin{array}{r}
+\mathsf{st},\\
+\mathsf{ptB}_1+k\cdot x_1\cdot G,\\
+\mathsf{ptB}_2+k\cdot x_2\cdot G,\\
+...,\\
+\mathsf{ptB}_n+k\cdot x_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)\stackrel{\mathsf{c}}{\approx}\left(\begin{array}{l}
+\mathsf{st},\\
+\mathsf{ptB}_1+r_1\cdot G,\\
+\mathsf{ptB}_2+r_2\cdot G,\\
+...,\\
+\mathsf{ptB}_n+r_n\cdot G,\\
+k\cdot G
+\end{array}
+\right)\]
+where $r_1,r_2,...,r_n$ are individually sampled from $\{0,1,...,q-1\}$. 
+
+However, the right-hand sides of both results about are actually the same distribution as follows:
+\[
+\left(\begin{array}{l}
+\mathsf{st},\\
+r_1\cdot G,\\
+r_2\cdot G,\\
+...,\\
+r_n\cdot G,\\
+k\cdot G
+\end{array}
+\right).\]
+
+As a result, we know that the both distributions on the left-hand sides are computationally indistinguishable, and therefore, the lemma is correct. \end{proof}
+
+\section{Security Proof of Rerandomization}
+We assume that $r$ was the random number used during the encryption that generates $\mathsf{ct}$. We can write $\mathsf{ct}$ using this random number, the public key $\mathsf{pk}=(\mathsf{pk}_1, \mathsf{pk}_2, ..., \mathsf{pk}_n)$, and the plaintext $\mathsf{pt}=(\mathsf{pt}_1, \mathsf{pt}_2, ..., \mathsf{pt}_n)$, as follows:
+\begin{align}
+\mathsf{ct}&=(\mathsf{ct}_1, \mathsf{ct}_2, ..., \mathsf{ct}_{n+1}).\notag\\
+\mathsf{ct}_i&=\mathsf{pt}_i+r\cdot\mathsf{pk}_i~~~(i\in\{1,2,...,n\}).\notag\\
+\mathsf{ct}_{n+1}&=r\cdot G.\notag
+\end{align}
+
+Let us consider the left-hand side where we use rerandomization. The new ciphertext $\mathsf{ct}'$ can be expressed as follows:
+\begin{align}
+\mathsf{ct}'&=(\mathsf{ct}'_1, \mathsf{ct}'_2, ..., \mathsf{ct}'_{n+1}).\notag\\
+\mathsf{ct}'_i&=\mathsf{pt}_i+(r+r')\cdot\mathsf{pk}_i~~~(i\in\{1,2,...,n\}).\notag\\
+\mathsf{ct}'_{n+1}&=(r+r')\cdot G.\notag
+\end{align}
+where $r'$ is randomly sampled from $\{0,1,...,q-1\}$. 
+
+Let us consider the right-hand side where we do the encryption again. The new ciphertext $\mathsf{ct}''$ can be expressed as follows:
+\begin{align}
+\mathsf{ct}''&=(\mathsf{ct}''_1, \mathsf{ct}''_2, ..., \mathsf{ct}''_{n+1}).\notag\\
+\mathsf{ct}''_i&=\mathsf{pt}_i+r''\cdot\mathsf{pk}_i~~~(i\in\{1,2,...,n\}).\notag\\
+\mathsf{ct}''_{n+1}&=r''\cdot G.\notag
+\end{align}
+where $r''$ is randomly sampled from $\{0,1,...,q-1\}$. 
+
+These two ciphertext distributions are the same. For this reason, we have the perfect indistinguishability for the rerandomization.
+
+\end{document}
